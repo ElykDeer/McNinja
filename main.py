@@ -38,18 +38,23 @@ def call_external_function_example():
   # A program is a ir.Module
   module = ir.Module(name=__file__)
 
+  # Phase 1, declare globals
+  # Create global string and get a reference to it
+  string = global_string_constant(module, "Hello world!\n", "string_name_thing")
+
+  # Phase 2, declare needed externs
+  # Declare printf
+  printf = ir.Function(module, ir.FunctionType(ir.IntType(32), [ir.IntType(8).as_pointer()], var_arg=True), name="printf")
+  # TODO : This generates a function prototype with default variable names, which we can manually patch out if we overwrite the args again after this line
+
+  # Phase 3, the actual function body
+
   # Just a function prototype, name, and module it belongs to
   func = ir.Function(module, ir.FunctionType(ir.VoidType(), []), name="main")
 
   # Functions have labeled basic blocks
   block = func.append_basic_block(name="entry")
   block_builder = ir.IRBuilder(block)  # An IR Builder is the internal rep
-
-  # Declare printf
-  printf = ir.Function(module, ir.FunctionType(ir.IntType(32), [ir.IntType(8).as_pointer()], var_arg=True), name="printf")
-
-  # Create global string and get a reference to it
-  string = global_string_constant(module, "Hello world!\n", "string_name_thing")
 
   # Convert the type from a string constant to a char*?
   format_string = block_builder.bitcast(string, ir.IntType(8).as_pointer())  # TODO : This is wrong.  I don't know how to do it right.
