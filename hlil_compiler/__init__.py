@@ -1,7 +1,7 @@
 # 1. Sweep binary for global variables, create them
 # 2. Sweep binary for (used?) external functions, declare those
 # 3. Sweep binary for internal functions, translate them
-
+import binaryninja
 from binaryninja.binaryview import BinaryView, SymbolType
 from binaryninja.types import Symbol
 from llvmlite import ir
@@ -51,13 +51,23 @@ class Parser:
 
   # 1. Sweep binary for global variables, create them
   def phase_1(self):
-    pass
-    # # Step one is to parse out the system variables...ELFView headers and the like
-    # for addr, data_var in self.bv.data_vars.items():
-    #   if data_var.symbol is None:
-    #     to_llir_type
-    #   elif data_var.symbol.type == SymbolType.DataSymbol and data_var.symbol.name not in DATA_VAR_BLACKLIST:
-    #     assert(False)  # TODO : All the symbols we've cared about so far haven't had symbols
+    # Step one is to parse out the system variables...ELFView headers and the like
+    for addr, data_var in self.bv.data_vars.items():
+      if data_var.symbol is None:
+        ir_type = to_llir_type(data_var.type)
+        if data_var.type.type_class == binaryninja.TypeClass.ArrayTypeClass:
+          cvar = ir.Constant(ir_type, bytearray(data_var.value))
+          gvar = ir.GlobalVariable(self.module, cvar.type, str(data_var.address))
+          gvar.linkage = 'internal'
+          gvar.global_constant = True
+          gvar.initializer = cvar
+        else:
+          cvar = ir.Constant(ir_type, data_var.value)
+          gvar = ir.GlobalVariable(self.module, cvar.type, str(data_var.address))
+          gvar.global_constant = data_var.type.const
+          gvar.initializer = cvar
+      elif data_var.symbol.type == SymbolType.DataSymbol and data_var.symbol.name not in DATA_VAR_BLACKLIST:
+        assert(False)  # TODO : All the symbols we've cared about so far haven't had symbols
 
   # 2. Sweep binary for (used?) external functions, declare those
   def phase_2(self):
