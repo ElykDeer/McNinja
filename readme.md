@@ -7,6 +7,13 @@ Compiles BinaryNinja's HLIL to LLVM
 2. Sweep binary for (used?) external functions, declare those
 3. Sweep binary for internal functions, translate them
 
+## (Devdocs, sorta) Things to know about LLVM IR / LLVMLite
+
+1. A program is a ir.Module; the entire program (at least for our simple test cases) can live in these modules
+2. Analogous to BinaryNinja, a program consists of functions (ir.Function) with basic blocks (ir.IRBuilder)
+3. Every basic block needs to end with a basic block terminator, which is one of: [ret, br, switch, indirectbr, invoke, callbr, resume, catchswitch, catchret, cleanupret, unreachable]
+   - The consequence of this that we should probably process the body of all the basic blocks in a function, then do another pass to stitch them together.  Alternatively, we could create all the basic blocks at the beginning and patch them together as we go along.  Thankfully we already have a known BB layout, so solving this should be hard..it's just a design consideration.
+
 ## FAQ
 
 ### How do you pronounce McNinja and where did the name come from
