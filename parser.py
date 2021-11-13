@@ -38,8 +38,11 @@ def to_llvm_ir_type(bn_type):
         return ir.LiteralStructType(ir_members, packed=bn_type.packed())
     elif tc == bn.TypeClass.EnumerationTypeClass:
         warnings.warn("Not sure if this is entirely correct...")
-        return ir.IntType(bn_type.width)
+        return ir.IntType(bn_type.width * 8)
     elif tc == bn.TypeClass.PointerTypeClass:
+        # TODO: look into this? LLVM IR does not like void pointers...
+        if bn_type.target.type_class == bn.TypeClass.VoidTypeClass:
+            return ir.PointerType(ir.IntType(bn_type.width * 8))
         return ir.PointerType(to_llvm_ir_type(bn_type.target))
     elif tc == bn.TypeClass.ArrayTypeClass:
         return ir.ArrayType(to_llvm_ir_type(bn_type.element_type()), bn_type.count())
@@ -60,23 +63,20 @@ def to_llvm_ir_type(bn_type):
         return None
 
 
+def parse_func(ir_module, func):
+    fun_type = to_llvm_ir_type(func.function_type)
+    fun = ir.Function(ir_module, fun_type, name=func.name)
+
+    for bb in func.high_level_il.ssa_form:
+        ir_bb = fun.append_basic_block()
+        builder = ir.IRBuilder(ir_bb)
+
+
 with bn.open_view("C:\\users\\admin\\downloads\\helloworld") as bv:
     bv.update_analysis_and_wait()
-    function = None
-    for func in bv.functions:
-        if "main" in func.name:
-            function = func
-            break
 
     ir_module = ir.Module()
-
-    ir_fun_type = to_llvm_ir_type(function.function_type)
-    ir_fun = ir.Function(ir_module, ir_fun_type, name=function.name)
-
-    for block in function.high_level_il.ssa_form:
-        ir_block = ir_fun.append_basic_block()
-        builder = ir.IRBuilder(ir_block)
-        # for instr in block:
-        #    print(instr)
+    for func in bv.functions:
+        parse_func(ir_module, func)
 
     print(ir_module)
