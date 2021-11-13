@@ -31,7 +31,7 @@ def to_llir_type(bn_type):
   elif tc == TypeClass.StructureTypeClass:
     ir_members = []
     for member in bn_type.members():
-      ir_members.append(to_llvm_ir_type(member))
+      ir_members.append(to_llir_type(member))
     return ir.LiteralStructType(ir_members, packed=bn_type.packed())
 
   elif tc == TypeClass.EnumerationTypeClass:
@@ -42,18 +42,18 @@ def to_llir_type(bn_type):
     # TODO: look into this? LLVM IR does not like void pointers...
     if bn_type.target.type_class == TypeClass.VoidTypeClass:
       return ir.PointerType(ir.IntType(bn_type.width * 8))
-    return ir.PointerType(to_llvm_ir_type(bn_type.target))
+    return ir.PointerType(to_llir_type(bn_type.target))
 
   elif tc == TypeClass.ArrayTypeClass:
-    return ir.ArrayType(to_llvm_ir_type(bn_type.element_type()), bn_type.count())
+    return ir.ArrayType(to_llir_type(bn_type.element_type()), bn_type.count())
 
   elif tc == TypeClass.FunctionTypeClass:
-    return ir.FunctionType(to_llvm_ir_type(bn_type.return_value),
-                           [to_llvm_ir_type(x.type) for x in bn_type.parameters])
+    return ir.FunctionType(to_llir_type(bn_type.return_value),
+                           [to_llir_type(x.type) for x in bn_type.parameters])
 
   elif tc == TypeClass.VarArgsTypeClass:
-    return ir.FunctionType(to_llvm_ir_type(bn_type.return_value),
-                           [to_llvm_ir_type(x.type) for x in bn_type.parameters], var_arg=True)
+    return ir.FunctionType(to_llir_type(bn_type.return_value),
+                           [to_llir_type(x.type) for x in bn_type.parameters], var_arg=True)
 
   elif tc == TypeClass.ValueTypeClass:
     warnings.warn("ValueTypeClass not implemented...")
