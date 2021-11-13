@@ -44,9 +44,11 @@ def to_llvm_ir_type(bn_type):
     elif tc == bn.TypeClass.ArrayTypeClass:
         return ir.ArrayType(to_llvm_ir_type(bn_type.element_type()), bn_type.count())
     elif tc == bn.TypeClass.FunctionTypeClass:
-        return ir.FunctionType(to_llvm_ir_type(bn_type.return_value), [to_llvm_ir_type(x.type) for x in bn_type.parameters])
+        return ir.FunctionType(to_llvm_ir_type(bn_type.return_value),
+                               [to_llvm_ir_type(x.type) for x in bn_type.parameters])
     elif tc == bn.TypeClass.VarArgsTypeClass:
-        return ir.FunctionType(to_llvm_ir_type(bn_type.return_value), [to_llvm_ir_type(x.type) for x in bn_type.parameters], var_arg=True)
+        return ir.FunctionType(to_llvm_ir_type(bn_type.return_value),
+                               [to_llvm_ir_type(x.type) for x in bn_type.parameters], var_arg=True)
     elif tc == bn.TypeClass.ValueTypeClass:
         warnings.warn("ValueTypeClass not implemented...")
         return None
@@ -56,6 +58,7 @@ def to_llvm_ir_type(bn_type):
     elif tc == bn.TypeClass.WideCharTypeClass:
         warnings.warn("WideCharTypeClass not implemented")
         return None
+
 
 with bn.open_view("C:\\users\\admin\\downloads\\helloworld") as bv:
     bv.update_analysis_and_wait()
@@ -73,7 +76,7 @@ with bn.open_view("C:\\users\\admin\\downloads\\helloworld") as bv:
     for block in function.high_level_il.ssa_form:
         ir_block = ir_fun.append_basic_block()
         builder = ir.IRBuilder(ir_block)
-        #for instr in block:
+        # for instr in block:
         #    print(instr)
 
     print(ir_module)
