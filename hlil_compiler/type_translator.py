@@ -45,7 +45,7 @@ def to_llir_type(bn_type):
     return ir.PointerType(to_llir_type(bn_type.target))
 
   elif tc == TypeClass.ArrayTypeClass:
-    return ir.ArrayType(to_llir_type(bn_type.element_type()), bn_type.count())
+    return ir.ArrayType(to_llir_type(bn_type.element_type), bn_type.count)
 
   elif tc == TypeClass.FunctionTypeClass:
     return ir.FunctionType(to_llir_type(bn_type.return_value),
