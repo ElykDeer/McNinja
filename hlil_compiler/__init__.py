@@ -7,7 +7,7 @@ from binaryninja.types import Symbol
 from llvmlite import ir
 
 from .type_translator import to_llir_type
-from .hlil_translator import translate_fucntion
+from .hlil_translator import translate_function
 
 # TODO : Find a way to generate this, rather than hardcoding it
 # SymbolType.DataSymbol
@@ -33,10 +33,14 @@ FUNCTION_BLACKLIST = ["_init",
                       "deregister_tm_clones",
                       "register_tm_clones",
                       "__libc_csu_init",
-                      "__libc_csu_fini"]
+                      "__libc_csu_fini",
+                      "frame_dummy",
+                      "_fini",
+                      "_start",
+                      "__do_global_dtors_aux"]
 
 
-class Parser():
+class Parser:
   def __init__(self, bv: BinaryView):
     self.bv = bv
 
@@ -70,4 +74,4 @@ class Parser():
         ir_func = ir.Function(self.module, ir_func_type, name=func.name)
         self.functions[func.name] = ir_func
 
-        translate_fucntion(self.bv, self.module, func, ir_func)
+        translate_function(self.bv, self.module, func, ir_func)
