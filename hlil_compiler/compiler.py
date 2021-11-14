@@ -1,5 +1,6 @@
 from ctypes import CFUNCTYPE, c_double
 import llvmlite.binding as llvm
+from time import perf_counter
 
 # All these initializations are required for code generation!
 llvm.initialize()
@@ -22,6 +23,19 @@ def create_execution_engine():
   return engine
 
 
+def optimize(mod, level):
+  pmb = llvm.create_pass_manager_builder()
+  pmb.opt_level = level
+  pm = llvm.create_module_pass_manager()
+  pmb.populate(pm)
+
+  t1 = perf_counter()
+  pm.run(mod)
+  t2 = perf_counter()
+  print(f'Time to run optimizations at level {level}: {t2-t1:0.4f} seconds')
+  print(f"Optimized LLVM IR:\n```\n{mod}\n```\n\n")
+
+
 def compile_ir(engine, llvm_ir):
   """
   Compile the LLVM IR string with the given engine.
@@ -30,6 +44,9 @@ def compile_ir(engine, llvm_ir):
   # Create a LLVM module object from the IR
   mod = llvm.parse_assembly(llvm_ir)
   mod.verify()
+
+  optimize(mod, 3)
+
   # Now add the module and make sure it is ready for execution
   engine.add_module(mod)
   engine.finalize_object()
