@@ -1,9 +1,9 @@
-from binaryninja import TypeClass
+from binaryninja import Type, TypeClass
 from llvmlite import ir
 import warnings
 
 
-def to_llir_type(bn_type):
+def to_llir_type(bn_type: Type):
   tc = bn_type.type_class
 
   if tc == TypeClass.VoidTypeClass:
@@ -49,7 +49,8 @@ def to_llir_type(bn_type):
 
   elif tc == TypeClass.FunctionTypeClass:
     return ir.FunctionType(to_llir_type(bn_type.return_value),
-                           [to_llir_type(x.type) for x in bn_type.parameters])
+                           [to_llir_type(x.type) for x in bn_type.parameters],
+                           var_arg=bn_type.has_variable_arguments.value)
 
   elif tc == TypeClass.VarArgsTypeClass:
     return ir.FunctionType(to_llir_type(bn_type.return_value),
