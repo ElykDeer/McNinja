@@ -80,7 +80,8 @@ class Parser:
     # We only care about ImportedFunctionSymbol's
     for func in self.bv.functions:
       if func.symbol.type == SymbolType.ImportedFunctionSymbol:
-        self.functions[func.start] = ir.Function(self.module, to_llir_type(func.function_type), name=func.name)
+        print(f'{func.name}:{to_llir_type(func.function_type, self.bv)}')
+        self.functions[func.start] = ir.Function(self.module, to_llir_type(func.function_type, self.bv), name=func.name)
 
   # 3. Sweep binary for internal functions, translate them
   def phase_3(self):

@@ -1,9 +1,10 @@
-from binaryninja import Type, TypeClass
+from binaryninja import Type, TypeClass, NamedTypeReferenceType, BinaryView
+from typing import Optional
 from llvmlite import ir
 import warnings
 
 
-def to_llir_type(bn_type: Type):
+def to_llir_type(bn_type: Type, bv: Optional[BinaryView] = None):
   tc = bn_type.type_class
 
   if tc == TypeClass.VoidTypeClass:
@@ -31,7 +32,7 @@ def to_llir_type(bn_type: Type):
   elif tc == TypeClass.StructureTypeClass:
     ir_members = []
     for member in bn_type.members():
-      ir_members.append(to_llir_type(member))
+      ir_members.append(to_llir_type(member, bv))
     return ir.LiteralStructType(ir_members, packed=bn_type.packed())
 
   elif tc == TypeClass.EnumerationTypeClass:
@@ -42,28 +43,28 @@ def to_llir_type(bn_type: Type):
     # TODO: look into this? LLVM IR does not like void pointers...
     if bn_type.target.type_class == TypeClass.VoidTypeClass:
       return ir.PointerType(ir.IntType(bn_type.width * 8))
-    return ir.PointerType(to_llir_type(bn_type.target))
+    return ir.PointerType(to_llir_type(bn_type.target, bv))
 
   elif tc == TypeClass.ArrayTypeClass:
-    return ir.ArrayType(to_llir_type(bn_type.element_type), bn_type.count)
+    return ir.ArrayType(to_llir_type(bn_type.element_type, bv), bn_type.count)
 
   elif tc == TypeClass.FunctionTypeClass:
-    return ir.FunctionType(to_llir_type(bn_type.return_value),
-                           [to_llir_type(x.type) for x in bn_type.parameters],
+    return ir.FunctionType(to_llir_type(bn_type.return_value, bv),
+                           [to_llir_type(x.type, bv) for x in bn_type.parameters],
                            var_arg=bn_type.has_variable_arguments.value)
 
   elif tc == TypeClass.VarArgsTypeClass:
-    return ir.FunctionType(to_llir_type(bn_type.return_value),
-                           [to_llir_type(x.type) for x in bn_type.parameters], var_arg=True)
+    return ir.FunctionType(to_llir_type(bn_type.return_value, bv),
+                           [to_llir_type(x.type, bv) for x in bn_type.parameters], var_arg=True)
 
   elif tc == TypeClass.ValueTypeClass:
-    warnings.warn("ValueTypeClass not implemented...")
-    return None
+    raise NotImplementedError('ValueTypeClass not implemented')
 
   elif tc == TypeClass.NamedTypeReferenceClass:
-    warnings.warn("NamedTypeReferenceClass not implemented...")
-    return None
+    # TODO: fix this, for some reason a NamedTypeReference to a size_t stores no information regarding the type
+    if bn_type.name == 'size_t':
+      return ir.IntType(64)
+    raise NotImplementedError('NamedTypeReferenceClass not implemented')
 
   elif tc == TypeClass.WideCharTypeClass:
-    warnings.warn("WideCharTypeClass not implemented")
-    return None
+    raise NotImplementedError('WideCharTypeClass not implemented')
