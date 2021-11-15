@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 
-from hlil_compiler import Parser
-from hlil_compiler.compiler import create_execution_engine, compile_ir
+from compiler import Parser
+from compiler.compiler import create_execution_engine, compile_ir
 
 import binaryninja
 from ctypes import CFUNCTYPE
 
 if __name__ == "__main__":
-  with binaryninja.open_view("./test_programs/helloworld/helloworld") as bv:
+  with binaryninja.open_view("C:\\McNinja\\test_programs\\helloworld-for\\helloworld") as bv:
     bv.update_analysis_and_wait()
 
     parser = Parser(bv)
 
     parser.phase_1()
     parser.phase_2()
-    parser.phase_3()
+    parser.phase_3(True)
 
     module = parser.module
 

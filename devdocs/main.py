@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from hlil_compiler.compiler import create_execution_engine, compile_ir
-from hlil_compiler.helpers import global_string_constant
+from compiler.compiler import create_execution_engine, compile_ir
+from compiler.helpers import global_string_constant
 
 from llvmlite import ir
 from ctypes import CFUNCTYPE, c_double

@@ -10,7 +10,8 @@ from binaryninja.types import Symbol
 from llvmlite import ir
 
 from .type_translator import to_llir_type
-from .hlil_translator import translate_function
+from .hlil_translator import translate_function_hlil
+from .mlil_translator import translate_function_mlil
 
 # TODO : Find a way to generate this, rather than hardcoding it
 # SymbolType.DataSymbol
@@ -73,18 +74,17 @@ class Parser:
           gvar.initializer = cvar
         self.global_vars[data_var.address] = gvar
       elif data_var.symbol.type == SymbolType.DataSymbol and data_var.symbol.name not in DATA_VAR_BLACKLIST:
-        assert(False)  # TODO : All the symbols we've cared about so far haven't had symbols
+        assert (False)  # TODO : All the symbols we've cared about so far haven't had symbols
 
   # 2. Sweep binary for (used?) external functions, declare those
   def phase_2(self):
     # We only care about ImportedFunctionSymbol's
     for func in self.bv.functions:
       if func.symbol.type == SymbolType.ImportedFunctionSymbol:
-        print(f'{func.name}:{to_llir_type(func.function_type, self.bv)}')
         self.functions[func.start] = ir.Function(self.module, to_llir_type(func.function_type, self.bv), name=func.name)
 
   # 3. Sweep binary for internal functions, translate them
-  def phase_3(self):
+  def phase_3(self, should_use_mlil=False):
     # Declare all the functions
     for func in self.bv.functions:
       if func.symbol.type == SymbolType.FunctionSymbol and func.name not in FUNCTION_BLACKLIST:
@@ -103,4 +103,7 @@ class Parser:
         print(f"Translating function {func.name}")
         ir_func = self.functions[func.start]
 
-        translate_function(self, func, ir_func)
+        if should_use_mlil:
+          translate_function_mlil(self, func, ir_func)
+        else:
+          translate_function_hlil(self, func, ir_func)
