@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     parser.phase_1()
     parser.phase_2()
-    parser.phase_3(True)
+    parser.phase_3()
 
     module = parser.module
 

@@ -10,7 +10,6 @@ from binaryninja.types import Symbol
 from llvmlite import ir
 
 from .type_translator import to_llir_type
-from .hlil_translator import translate_function_hlil
 from .mlil_translator import translate_function_mlil
 
 # TODO : Find a way to generate this, rather than hardcoding it
@@ -84,7 +83,7 @@ class Parser:
         self.functions[func.start] = ir.Function(self.module, to_llir_type(func.function_type, self.bv), name=func.name)
 
   # 3. Sweep binary for internal functions, translate them
-  def phase_3(self, should_use_mlil=False):
+  def phase_3(self):
     # Declare all the functions
     for func in self.bv.functions:
       if func.symbol.type == SymbolType.FunctionSymbol and func.name not in FUNCTION_BLACKLIST:
@@ -103,7 +102,4 @@ class Parser:
         print(f"Translating function {func.name}")
         ir_func = self.functions[func.start]
 
-        if should_use_mlil:
-          translate_function_mlil(self, func, ir_func)
-        else:
-          translate_function_hlil(self, func, ir_func)
+        translate_function_mlil(self, func, ir_func)
