@@ -6,8 +6,16 @@ from compiler.compiler import create_execution_engine, compile_ir
 import binaryninja
 from ctypes import CFUNCTYPE
 
+import platform
+
+if platform.system() == "Windows":
+  FILE = "C:\\McNinja\\test_programs\\helloworld-for\\helloworld"
+else:
+  FILE = "./test_programs/helloworld-for/helloworld"
+
 if __name__ == "__main__":
-  with binaryninja.open_view("C:\\McNinja\\test_programs\\helloworld-for\\helloworld") as bv:
+  print(FILE)
+  with binaryninja.open_view(FILE) as bv:
     bv.update_analysis_and_wait()
 
     parser = Parser(bv)
