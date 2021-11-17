@@ -10,7 +10,7 @@ from binaryninja.types import Symbol
 from llvmlite import ir
 
 from .type_translator import to_llir_type
-from .mlil_translator import translate_function_mlil
+from .mlil_translator import Traverser
 
 # TODO : Find a way to generate this, rather than hardcoding it
 # SymbolType.DataSymbol
@@ -102,4 +102,4 @@ class Parser:
         print(f"Translating function {func.name}")
         ir_func = self.functions[func.start]
 
-        translate_function_mlil(self, func, ir_func)
+        Traverser(self, func.medium_level_il, ir_func).translate()
