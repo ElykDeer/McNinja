@@ -14,11 +14,10 @@ Roughly in increasing complexity, these are the current examples:
 1. helloworld
 2. helloworld-while
 3. helloworld-for
+4. collatz
+5. optimization-test
 
 ## Next examples
 
-4. Something with variables
-5. Something with multiple basic blocks and control flow
-6. Something with arithmetic operations
-7. Not sure yet
-8. sqlite
+6. ???
+7. sqlite
