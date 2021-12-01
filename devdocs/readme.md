@@ -1,5 +1,11 @@
 # Dev Docs
 
+### Testing
+
+Testing is provided by `./test.py`.  We analyze, emit LLVM, recompile the bitcode, and then compare the output of the new program to the output of the original program.
+
+Simply run the file to test the current performance.
+
 ### main.py
 
 Provides some examples of how to use llvmlite in some extremely basic use-cases

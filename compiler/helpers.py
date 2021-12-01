@@ -1,5 +1,6 @@
 from llvmlite import ir
 import binaryninja as bn
+from typing import Tuple  # TODO : Set minimum python version to 3.9
 
 
 def global_string_constant(module, string: str, name: str):
@@ -12,7 +13,7 @@ def global_string_constant(module, string: str, name: str):
   return global_fmt
 
 
-def recover_true_false_branches(instr: bn.mediumlevelil.MediumLevelILInstruction) -> tuple[bn.mediumlevelil.MediumLevelILBasicBlock, bn.mediumlevelil.MediumLevelILBasicBlock]:
+def recover_true_false_branches(instr: bn.mediumlevelil.MediumLevelILInstruction) -> Tuple[bn.mediumlevelil.MediumLevelILBasicBlock, bn.mediumlevelil.MediumLevelILBasicBlock]:
   true_branch = None
   false_branch = None
   for target in instr.il_basic_block.outgoing_edges:
