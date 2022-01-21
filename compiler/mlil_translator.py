@@ -64,7 +64,7 @@ class Traverser:
       self.set_ir_var_def(var, entry_block_builder.alloca(to_llir_type(var.type)))
 
     for il_block in self.function.basic_blocks:
-      print(f'{il_block.index}:{il_block}')
+      # print(f'{il_block.index}:{il_block}')
       for instr in il_block:
         self.traverse(instr, self.get_ir_builder_for_il_block(il_block))
 
@@ -75,10 +75,10 @@ class Traverser:
     if isinstance(instr, list):
       return [self.traverse(entry, builder) for entry in instr]
     elif not isinstance(instr, bn.mediumlevelil.MediumLevelILInstruction):
-      print(f'<Not an operation, {type(instr)}, {str(instr)}>')
+      # print(f'<Not an operation, {type(instr)}, {str(instr)}>')
       raise ValueError
 
-    print(f'  <MediumLevelILOperation, {str(instr.operation)}>')
+    # print(f'  <MediumLevelILOperation, {str(instr.operation)}>')
 
     ###############################
     # Potentially recursive cases #

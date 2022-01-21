@@ -7,6 +7,7 @@
 
 import os
 import sys
+import select
 import platform
 from io import StringIO
 import binaryninja as bn
@@ -45,39 +46,42 @@ def execute_file(file: str) -> str:
 
 
 def recompile_and_execute_file(file):
-  class Capturing(list):
-    def __enter__(self):
-      self._stdout = sys.stdout
-      sys.stdout = self._stringio = StringIO()
-      return self
-
-    def __exit__(self, *args):
-      self.extend(self._stringio.getvalue())
-      del self._stringio    # free up some memory
-      sys.stdout = self._stdout
-
   with bn.open_view(file) as bv:
     bv.update_analysis_and_wait()
 
     parser = Parser(bv)
-
     parser.phase_1()
     parser.phase_2()
     parser.phase_3()
 
     module = parser.module
 
-    engine = create_execution_engine()
-    mod = compile_ir(engine, str(module))
+  engine = create_execution_engine()
+  mod = compile_ir(engine, str(module))
 
-    # Look up the function pointer (a Python int)
-    func_ptr = engine.get_function_address("main")
+  # Look up the function pointer (a Python int)
+  func_ptr = engine.get_function_address("main")
 
-    # Run the function via ctypes
-    with Capturing() as output:
-      CFUNCTYPE(None)(func_ptr)()
+  # Run the function via ctypes and capture output
+  pipe_out, pipe_in = os.pipe()
+  stdout = os.dup(1)
+  os.dup2(pipe_in, 1)
+  os.close(pipe_in)
 
-    return output
+  CFUNCTYPE(None)(func_ptr)()
+
+  output = ''
+  while True:
+    buffer = os.read(pipe_out, 1024)
+    if not buffer:
+      break
+    output += str(buffer)
+
+  os.close(1)
+  os.close(pipe_out)
+  os.dup2(stdout, 1)
+  os.close(stdout)
+  return output
 
 
 def run_tests():
@@ -86,32 +90,42 @@ def run_tests():
   for test, filename in get_binary_files():
     total += 1
     print(f"[TESTING - {test}] Starting test `{test}`.")
-    try:
-      print(f"[TESTING - {test}] Executing file `{filename}`)...", end="", flush=True)
-      original_output = execute_file(filename)
-      print("done")
-    except:
-      print(f"[ERROR] Failed to execute `{filename}`")
 
+    # # Run the original binary, get output
+    # try:
+    #   print(f"[TESTING - {test}] Executing file `{filename}`)...", end="", flush=True)
+    #   original_output = execute_file(filename)
+    #   print("done")
+    # except:
+    #   print(f"[ERROR] Failed to execute `{filename}`")
+
+    # Run the recompiled binary, get output
     try:
       print(f"[TESTING - {test}] Recompiling and executing file `{filename}`)...", end="", flush=True)
       recompiled_output = recompile_and_execute_file(filename)
+      print(recompiled_output)
       print("done")
     except:
       print(f"[ERROR] Failed to recompile and execute `{filename}`")
 
-    if original_output == recompiled_output:
-      passed += 1
-      print(f"[TESTING - {test}] Passed!")
-    else:
-      print(f"[TESTING - {test}] Failed")
-      print(f"[TESTING - {test}] Original output:")
-      for line in original_output.splitlines():
-        print(f"[TESTING - {test}]  {line}")
-      print(f"[TESTING - {test}] Recompiled output:")
-      for line in recompiled_output.splitlines():
-        print(f"[TESTING - {test}]  {line}")
-      # TODO : Pretty print differences
+    # # Check if outputs are equal
+    # if original_output == recompiled_output:
+    #   passed += 1
+    #   print(f"[TESTING - {test}] Passed!")
+    # else:
+    #   # If they're not equal, pretty print how they're not equal
+    #   print(f"[TESTING - {test}] Failed")
+    #   print("##################")
+    #   print("Original output:")
+    #   for line_n, line in enumerate(str(original_output).splitlines()):
+    #     print(f"Line {line_n}:  {line}")
+    #   print("##################")
+    #   print("Recompiled output:")
+    #   for line_n, line in enumerate(str(recompiled_output).splitlines()):
+    #     print(f"Line {line_n}:  {line}")
+    #   # TODO : Pretty print differences
+
+    print()
 
   if passed == total:
     print(f"PASSED ({passed}/{total})")

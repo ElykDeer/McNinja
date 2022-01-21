@@ -99,7 +99,7 @@ class Parser:
       if func.symbol.type == SymbolType.FunctionSymbol and func.name not in FUNCTION_BLACKLIST:
         if func.name != "main":  # TODO : Remove
           continue
-        print(f"Translating function {func.name}")
+        # print(f"Translating function {func.name}")
         ir_func = self.functions[func.start]
 
         Traverser(self, func.medium_level_il, ir_func).translate()

@@ -29,11 +29,11 @@ def optimize(mod, level):
   pm = llvm.create_module_pass_manager()
   pmb.populate(pm)
 
-  t1 = perf_counter()
+  # t1 = perf_counter()
   pm.run(mod)
-  t2 = perf_counter()
-  print(f'Time to run optimizations at level {level}: {t2-t1:0.4f} seconds')
-  print(f"Optimized LLVM IR:\n```\n{mod}\n```\n\n")
+  # t2 = perf_counter()
+  # print(f'Time to run optimizations at level {level}: {t2-t1:0.4f} seconds')
+  # print(f"Optimized LLVM IR:\n```\n{mod}\n```\n\n")
 
 
 def compile_ir(engine, llvm_ir):
