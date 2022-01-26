@@ -59,7 +59,7 @@ class Traverser:
       self.set_il_to_ir_block_mapping(il_block, ir.IRBuilder(ir_block))
 
     # TODO : Probably define aliases here too
-    entry_block_builder = self.get_ir_builder_for_il_block(self.function.basic_blocks[0])
+    entry_block_builder = self.get_ir_builder_for_il_block(list(self.function.basic_blocks)[0])
     for var in self.function.vars:
       self.set_ir_var_def(var, entry_block_builder.alloca(to_llir_type(var.type)))
 
@@ -84,11 +84,50 @@ class Traverser:
     # Potentially recursive cases #
     ###############################
 
+    ### MLIL_XOR ###
+    if ops.MLIL_XOR == instr.operation:
+      return builder.xor(self.traverse(instr.left, builder),
+                         self.traverse(instr.right, builder))
+
+    ### MLIL_ADD ###
+    elif ops.MLIL_ADD == instr.operation:
+      return builder.add(self.traverse(instr.left, builder),
+                         self.traverse(instr.right, builder))
+
+    ### MLIL_MUL ###
+    elif ops.MLIL_MUL == instr.operation:
+      return builder.mul(self.traverse(instr.left, builder),
+                         self.traverse(instr.right, builder))
+
+    ### MLIL_DIVS_DP ###
+    elif ops.MLIL_DIVS_DP == instr.operation:
+      return builder.fdiv(self.traverse(instr.left, builder),
+                          self.traverse(instr.right, builder))
+
+    ### MLIL_MODS_DP ###
+    elif ops.MLIL_MODS_DP == instr.operation:
+      return builder.frem(self.traverse(instr.left, builder),
+                          self.traverse(instr.right, builder))
+
+    ### MLIL_ZX ###
+    elif ops.MLIL_ZX == instr.operation:
+      src = self.traverse(instr.src, builder)
+      return builder.zext(src, ir.IntType(instr.size * 8))
+
+    ### MLIL_SX ###
+    elif ops.MLIL_SX == instr.operation:
+      src = self.traverse(instr.src, builder)
+      return builder.sext(src, ir.IntType(instr.size * 8))
+
     ### MLIL_SET_VAR ###
     if ops.MLIL_SET_VAR == instr.operation:
       dest_var = self.get_ir_var_def(instr.dest)
       rhs_value = self.traverse(instr.src, builder)
       builder.store(rhs_value, dest_var)
+
+    ### MLIL_LOAD ###
+    elif ops.MLIL_LOAD == instr.operation:
+      return builder.load(self.traverse(instr.src, builder))
 
     ### MLIL_GOTO ###
     elif ops.MLIL_GOTO == instr.operation:
@@ -96,8 +135,7 @@ class Traverser:
 
     ### MLIL_RET ###
     elif ops.MLIL_RET == instr.operation:
-      # TODO: multiple returns, etc.
-      builder.ret(ir.Constant(ir.IntType(instr.src[0].size * 8), instr.src[0].constant))
+      builder.ret(self.traverse(instr.src, builder)[0])  # TODO : Handle multuple returns
 
     ### MLIL_CALL ###
     elif ops.MLIL_CALL == instr.operation:
@@ -145,6 +183,19 @@ class Traverser:
       # TODO : not always an `icmp`...work that out later
       return builder.icmp_unsigned("!=", self.traverse(instr.left, builder), self.traverse(instr.right, builder))
 
+    ### MLIL_CME_E ###
+    elif ops.MLIL_CMP_E == instr.operation:
+      # TODO : not always an `icmp`...work that out later
+      return builder.icmp_unsigned("==", self.traverse(instr.left, builder), self.traverse(instr.right, builder))
+
+    ### MLIL_CMP_SGT ###
+    elif ops.MLIL_CMP_SGT == instr.operation:
+      # TODO : not always an `icmp`...work that out later
+      return builder.icmp_signed(">", self.traverse(instr.left, builder), self.traverse(instr.right, builder))
+
+    ### MLIL_NORET ###
+    elif ops.MLIL_NORET == instr.operation:
+      return builder.unreachable()
+
     else:
-      pass
-      # raise NotImplementedError(f'{str(instr.operation)} is not implemented')
+      raise NotImplementedError(f'{str(instr.operation)} is not implemented')

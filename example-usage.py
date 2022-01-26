@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.9
 
 from compiler import Parser
 from compiler.compiler import create_execution_engine, compile_ir
