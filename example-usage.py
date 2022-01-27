@@ -9,13 +9,21 @@ from ctypes import CFUNCTYPE
 import platform
 
 if platform.system() == "Windows":
-  FILE = "C:\\McNinja\\test_programs\\helloworld-for\\helloworld"
+  FILES = [
+    "C:\\McNinja\\test_programs\\helloworld\\helloworld",
+    "C:\\McNinja\\test_programs\\helloworld-for\\helloworld",
+    "C:\\McNinja\\test_programs\\optimization-test\\optimization-test",
+  ]
 else:
-  FILE = "./test_programs/helloworld-for/helloworld"
+  FILES = [
+    "./test_programs/helloworld/helloworld",
+    "./test_programs/helloworld-for/helloworld",
+    "./test_programs/optimization-test/optimization-test",
+  ]
 
-if __name__ == "__main__":
-  print(FILE)
-  with binaryninja.open_view(FILE) as bv:
+
+def run_file(f):
+  with binaryninja.open_view(f) as bv:
     bv.update_analysis_and_wait()
 
     parser = Parser(bv)
@@ -36,3 +44,8 @@ if __name__ == "__main__":
 
     # Run the function via ctypes
     CFUNCTYPE(None)(func_ptr)()
+
+
+if __name__ == "__main__":
+  for file in FILES:
+    run_file(file)
