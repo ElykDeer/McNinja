@@ -45,9 +45,8 @@ class Traverser:
 
   def get_ir_var_def(self, var: Variable) -> ir.Instruction:
     assert(isinstance(var, Variable))
-    if var in self._ir_var_defs:
-      return self._ir_var_defs[var]
-    return None
+    assert(var in self._ir_var_defs)
+    return self._ir_var_defs[var]
 
   #############
   # Main body #
@@ -119,11 +118,26 @@ class Traverser:
       src = self.traverse(instr.src, builder)
       return builder.sext(src, ir.IntType(instr.size * 8))
 
+    ### MLIL_STORE ###
+    elif ops.MLIL_STORE == instr.operation:
+      dest_var = self.traverse(instr.dest, builder)
+      rhs_value = self.traverse(instr.src, builder)
+      if dest_var.type.pointee != rhs_value.type:
+        builder.store(builder.bitcast(rhs_value, dest_var.type.pointee), dest_var)
+      else:
+        builder.store(rhs_value, dest_var)
+
     ### MLIL_SET_VAR ###
-    if ops.MLIL_SET_VAR == instr.operation:
+    elif ops.MLIL_SET_VAR == instr.operation:
       dest_var = self.get_ir_var_def(instr.dest)
       rhs_value = self.traverse(instr.src, builder)
-      builder.store(rhs_value, dest_var)
+      if dest_var.type.pointee != rhs_value.type:
+        if dest_var.type.pointee.is_pointer:
+          builder.store(builder.inttoptr(rhs_value, dest_var.type.pointee), dest_var)
+        else:
+          builder.store(builder.bitcast(rhs_value, dest_var.type.pointee), dest_var)
+      else:
+        builder.store(rhs_value, dest_var)
 
     ### MLIL_LOAD ###
     elif ops.MLIL_LOAD == instr.operation:
