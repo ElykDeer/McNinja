@@ -139,6 +139,26 @@ class Traverser:
       else:
         builder.store(rhs_value, dest_var)
 
+    ### MLIL_SET_VAR_FIELD ###
+    elif ops.MLIL_SET_VAR_FIELD == instr.operation:
+      dest_var = self.get_ir_var_def(instr.dest)
+      rhs_value = self.traverse(instr.src, builder)
+      rhs_value = builder.zext(rhs_value,  ir.IntType(instr.dest.type.width*8))  # TODO : Too frail - need to get same type of larger size
+      rhs_value = builder.shl(rhs_value, ir.Constant(type(rhs_value.type)(rhs_value.type.width), instr.offset*8))
+      mask = ir.Constant(ir.IntType(instr.dest.type.width*8), (2**(instr.dest.type.width*8)-1)^((2**(instr.size*8)-1)<<(instr.offset*8)))
+
+      if dest_var.type.pointee != rhs_value.type:
+        if dest_var.type.pointee.is_pointer:
+          rhs_value = builder.and_(rhs_value, builder.and_(mask, builder.ptrtoint(builder.load(dest_var), mask.type)))
+          rhs_value = builder.inttoptr(rhs_value, dest_var.type.pointee)
+          builder.store(rhs_value, dest_var)
+        else:
+          rhs_value = builder.and_(rhs_value, builder.and_(mask, builder.ptrtoint(builder.load(dest_var), mask.type)))
+          rhs_value = builder.bitcast(rhs_value, dest_var.type.pointee)
+          builder.store(rhs_value, dest_var)
+      else:
+        builder.store(rhs_value, dest_var)
+
     ### MLIL_LOAD ###
     elif ops.MLIL_LOAD == instr.operation:
       return builder.load(self.traverse(instr.src, builder))
@@ -159,7 +179,18 @@ class Traverser:
         raise NotImplementedError(f"Non-constant calls not yet implemented (`{instr.dest.operation}`)")
 
       new_args = [self.traverse(operand, builder) for operand in instr.params]
-      builder.call(call_target, new_args)
+      rhs_value = builder.call(call_target, new_args)
+      if len(instr.output) > 0:
+        # TODO : Split variable stuff
+        # TODO : Dedupe from MLIL_SET_VAR
+        dest_var = self.get_ir_var_def(instr.output[0])
+        if dest_var.type.pointee != rhs_value.type:
+          if dest_var.type.pointee.is_pointer:
+            builder.store(builder.inttoptr(rhs_value, dest_var.type.pointee), dest_var)
+          else:
+            builder.store(builder.bitcast(rhs_value, dest_var.type.pointee), dest_var)
+        else:
+          builder.store(rhs_value, dest_var)
 
     ### MLIL_IF ###
     elif ops.MLIL_IF == instr.operation:
@@ -168,6 +199,12 @@ class Traverser:
       builder.cbranch(condition,
                       self.get_ir_builder_for_il_block(true_branch).block,
                       self.get_ir_builder_for_il_block(false_branch).block)
+
+    ### MLIL_JUMP ###
+    elif ops.MLIL_JUMP == instr.operation:
+      target = self.traverse(instr.dest, builder)
+      builder.branch_indirect(builder.inttoptr(target, target.type.as_pointer()))  # TODO : IDK If this is frail or not - will code targets always be int64s in binja?
+      # builder.branch(self.get_ir_builder_for_il_block(instr.il_basic_block.outgoing_edges[0].target).block)
 
     ##############
     # Base cases #

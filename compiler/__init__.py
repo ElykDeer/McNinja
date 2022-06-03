@@ -87,8 +87,8 @@ class Parser:
     # Declare all the functions
     for func in self.bv.functions:
       if func.symbol.type == SymbolType.FunctionSymbol and func.name not in FUNCTION_BLACKLIST:
-        if func.name != "main":  # TODO : Remove
-          continue
+        # if func.name != "main":  # TODO : Remove
+        #   continue
         ir_func_type = to_llir_type(func.function_type)
         ir_func = ir.Function(self.module, ir_func_type, name=func.name)
         self.functions[func.start] = ir_func
@@ -97,8 +97,8 @@ class Parser:
     # TODO : Parallelize this translation on a BB level
     for func in self.bv.functions:
       if func.symbol.type == SymbolType.FunctionSymbol and func.name not in FUNCTION_BLACKLIST:
-        if func.name != "main":  # TODO : Remove
-          continue
+        # if func.name != "main":  # TODO : Remove
+        #   continue
         print(f"Translating function {func.name}")
         ir_func = self.functions[func.start]
 
