@@ -79,9 +79,9 @@ class Traverser:
 
     print(f'  <MediumLevelILOperation, {str(instr.operation)}>')
 
-    ###############################
-    # Potentially recursive cases #
-    ###############################
+    #########################
+    # Arithmetic operations #
+    #########################
 
     ### MLIL_XOR ###
     if ops.MLIL_XOR == instr.operation:
@@ -117,6 +117,10 @@ class Traverser:
     elif ops.MLIL_SX == instr.operation:
       src = self.traverse(instr.src, builder)
       return builder.sext(src, ir.IntType(instr.size * 8))
+
+    ####################
+    # Loads and stores #
+    ####################
 
     ### MLIL_STORE ###
     elif ops.MLIL_STORE == instr.operation:
@@ -163,13 +167,23 @@ class Traverser:
     elif ops.MLIL_LOAD == instr.operation:
       return builder.load(self.traverse(instr.src, builder))
 
-    ### MLIL_GOTO ###
-    elif ops.MLIL_GOTO == instr.operation:
-      builder.branch(self.get_ir_builder_for_il_block(instr.il_basic_block.outgoing_edges[0].target).block)
+    ################
+    # Control flow #
+    ################
 
-    ### MLIL_RET ###
-    elif ops.MLIL_RET == instr.operation:
-      builder.ret(self.traverse(instr.src, builder)[0])  # TODO : Handle multuple returns
+    ### MLIL_IF ###
+    elif ops.MLIL_IF == instr.operation:
+      condition = self.traverse(instr.condition, builder)
+      true_branch, false_branch = recover_true_false_branches(instr)
+      builder.cbranch(condition,
+                      self.get_ir_builder_for_il_block(true_branch).block,
+                      self.get_ir_builder_for_il_block(false_branch).block)
+
+    ### MLIL_JUMP ###
+    elif ops.MLIL_JUMP == instr.operation:
+      target = self.traverse(instr.dest, builder)
+      builder.branch_indirect(builder.inttoptr(target, target.type.as_pointer()))  # TODO : IDK If this is frail or not - will code targets always be int64s in binja?
+      # builder.branch(self.get_ir_builder_for_il_block(instr.il_basic_block.outgoing_edges[0].target).block)
 
     ### MLIL_CALL ###
     elif ops.MLIL_CALL == instr.operation:
@@ -192,19 +206,13 @@ class Traverser:
         else:
           builder.store(rhs_value, dest_var)
 
-    ### MLIL_IF ###
-    elif ops.MLIL_IF == instr.operation:
-      condition = self.traverse(instr.condition, builder)
-      true_branch, false_branch = recover_true_false_branches(instr)
-      builder.cbranch(condition,
-                      self.get_ir_builder_for_il_block(true_branch).block,
-                      self.get_ir_builder_for_il_block(false_branch).block)
+    ### MLIL_GOTO ###
+    elif ops.MLIL_GOTO == instr.operation:
+      builder.branch(self.get_ir_builder_for_il_block(instr.il_basic_block.outgoing_edges[0].target).block)
 
-    ### MLIL_JUMP ###
-    elif ops.MLIL_JUMP == instr.operation:
-      target = self.traverse(instr.dest, builder)
-      builder.branch_indirect(builder.inttoptr(target, target.type.as_pointer()))  # TODO : IDK If this is frail or not - will code targets always be int64s in binja?
-      # builder.branch(self.get_ir_builder_for_il_block(instr.il_basic_block.outgoing_edges[0].target).block)
+    ### MLIL_RET ###
+    elif ops.MLIL_RET == instr.operation:
+      builder.ret(self.traverse(instr.src, builder)[0])  # TODO : Handle multuple returns
 
     ##############
     # Base cases #
@@ -214,6 +222,12 @@ class Traverser:
     elif ops.MLIL_VAR == instr.operation:
       # TODO : Alignment might be wrong
       return builder.load(self.get_ir_var_def(instr.src), align=instr.src.type.width)
+
+    ### MLIL_VAR_FIELD ###
+    elif ops.MLIL_VAR_FIELD == instr.operation:
+      value = builder.load(self.get_ir_var_def(instr.src), align=instr.src.type.width)
+      value = builder.lshr(value, ir.Constant(type(value.type)(value.type.width), instr.offset*8))
+      return builder.trunc(value, type(value.type)(instr.size))
 
     ### MLIL_CONST ###
     elif ops.MLIL_CONST == instr.operation:
